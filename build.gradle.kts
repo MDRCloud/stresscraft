@@ -18,6 +18,14 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-cli-jvm:0.3.5")
     implementation("org.geysermc.mcprotocollib:protocol:1.21-SNAPSHOT")
     implementation("org.fusesource.jansi:jansi:2.4.0")
+
+    // Web GUI dependencies
+    val ktorVersion = "2.3.4"
+    implementation("io.ktor:ktor-server-core:$ktorVersion")
+    implementation("io.ktor:ktor-server-netty:$ktorVersion")
+    implementation("io.ktor:ktor-server-html-builder:$ktorVersion")
+    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
 }
 
 tasks {

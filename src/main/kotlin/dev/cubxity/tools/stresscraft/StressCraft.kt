@@ -71,6 +71,10 @@ class StressCraft(
         }
     }
 
+    fun stop() {
+        executeShutdownHook()
+    }
+
     private fun createSession() {
         val name = options.prefix + "${id++}".padStart(4, '0')
         val session = StressCraftSession(this)

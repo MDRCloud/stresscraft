@@ -24,6 +24,23 @@ Please be aware that attempting to execute this with an external server as a tar
 
 If you're on Velocity, you may also need to set `login-ratelimit` (velocity.toml) to `0`
 
+## Docker Compose
+
+This repository contains a `Dockerfile` and `docker-compose.yml` to run the optional web interface in a container.
+To build and start the service:
+
+```bash
+docker compose up --build
+```
+
+The web UI will be available on [http://localhost:8080](http://localhost:8080).
+
+To run the CLI instead, override the command:
+
+```bash
+docker compose run --rm stresscraft <host> [port]
+```
+
 ## Who needs this?
 
 - Michael
@@ -39,9 +56,9 @@ If you're on Velocity, you may also need to set `login-ratelimit` (velocity.toml
 - [ ] Scripting?
 - [ ] Physics simulation
 - [ ] Random movements
-- [ ] Non-TTY support 
+- [ ] Non-TTY support
 - [ ] Velocity forwarding?
-- [ ] Dockerfile
+- [x] Dockerfile
 - [ ] Helm chart?
 - [ ] GUI Frontend?
 - [ ] Prometheus exporter?

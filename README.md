@@ -20,26 +20,56 @@ Please be aware that attempting to execute this with an external server as a tar
 - Set `network-compression-threshold` (server.properties) to `-1`
 - Set `connection-throttle` (bukkit.yml) to `-1`
 - Increase `max-joins-per-tick` (paper.yml) to your liking
-- Execute the jar with proper arguments
 
 If you're on Velocity, you may also need to set `login-ratelimit` (velocity.toml) to `0`
 
-## Docker Compose
+## Docker Compose Stack
 
-This repository contains a `Dockerfile` and `docker-compose.yml` to run the optional web interface in a container.
-To build and start the service:
+This repository ships a full **two-container Docker Compose stack**:
+
+| Container | Role | Image |
+|---|---|---|
+| `stresscraft-backend` | Ktor/JVM REST + WebSocket API | built from `Dockerfile` |
+| `stresscraft-frontend` | Nginx static UI + reverse proxy | `nginx:1.27-alpine` |
+
+### Start the stack
 
 ```bash
 docker compose up --build
 ```
 
-The web UI will be available on [http://localhost:8080](http://localhost:8080).
+The web dashboard will be available at **[http://localhost:8282](http://localhost:8282)**.
 
-To run the CLI instead, override the command:
+### Run in the background
 
 ```bash
-docker compose run --rm stresscraft <host> [port]
+docker compose up -d --build
 ```
+
+### Stop the stack
+
+```bash
+docker compose down
+```
+
+### Architecture
+
+```
+Browser → :8282 Nginx → /api/* → :8080 Ktor backend → Minecraft server
+                       /api/ws  →  WebSocket telemetry stream
+                       /        →  Static dashboard assets
+```
+
+## Web Dashboard
+
+The dashboard provides:
+
+- **Live metrics** — total bots, active sessions, chunks loaded, join rate/s
+- **Real-time charts** — 60-second rolling session load and chunk pressure graphs
+- **Control panel** — configure host, port, bot count, join delay, buffer, prefix, and simulation mode
+- **Presets** — Light / Medium / Extreme one-click load profiles
+- **Event log** — live terminal view of test lifecycle events
+- **Toast notifications** — contextual start/stop feedback
 
 ## Who needs this?
 
@@ -59,6 +89,7 @@ docker compose run --rm stresscraft <host> [port]
 - [ ] Non-TTY support
 - [ ] Velocity forwarding?
 - [x] Dockerfile
+- [x] Docker Compose stack
+- [x] Web dashboard (glassmorphic dark UI, real-time WebSocket telemetry)
 - [ ] Helm chart?
-- [ ] GUI Frontend?
 - [ ] Prometheus exporter?

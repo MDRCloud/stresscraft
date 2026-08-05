@@ -2,115 +2,59 @@ package dev.cubxity.tools.stresscraft.web
 
 import dev.cubxity.tools.stresscraft.StressCraft
 import dev.cubxity.tools.stresscraft.StressCraftOptions
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.websocket.*
 import io.ktor.serialization.kotlinx.json.*
-import io.ktor.server.html.*
-import kotlinx.html.*
+import io.ktor.websocket.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /**
- * Simple web GUI for StressCraft allowing basic administration through HTTP endpoints.
+ * StressCraft Web API — serves a REST/WebSocket API backend.
+ * The modern frontend dashboard is served separately by Nginx.
+ *
+ * Routes:
+ *   GET  /api/stats          → current telemetry snapshot (JSON)
+ *   POST /api/start          → start a stress-test session
+ *   POST /api/stop           → stop the running session
+ *   WS   /api/ws             → real-time telemetry stream (1 s ticks)
  */
 object StressCraftWeb {
+    @Volatile
     private var app: StressCraft? = null
 
     fun start() {
-        embeddedServer(Netty, port = 8080) {
-            install(ContentNegotiation) {
-                json()
+        embeddedServer(Netty, port = 8080, host = "0.0.0.0") {
+            install(ContentNegotiation) { json() }
+            install(WebSockets) {
+                pingPeriodMillis = 15_000
+                timeoutMillis = 30_000
             }
 
             routing {
-                get("/") {
-                    call.respondHtml {
-                        head {
-                            title { +"StressCraft" }
-                            script {
-                                unsafe {
-                                    raw(
-                                        """
-                                        async function refresh() {
-                                            const res = await fetch('/stats');
-                                            if (res.ok) {
-                                                const data = await res.json();
-                                                document.getElementById('sessions').innerText = data.sessionCount ?? 0;
-                                                document.getElementById('active').innerText = data.activeSessions ?? 0;
-                                                document.getElementById('chunks').innerText = data.chunksLoaded ?? 0;
-                                            }
-                                        }
-                                        async function start(event) {
-                                            event.preventDefault();
-                                            const form = document.getElementById('start-form');
-                                            const data = new URLSearchParams(new FormData(form));
-                                            await fetch('/start', {method: 'POST', body: data});
-                                        }
-                                        async function stop() {
-                                            await fetch('/stop', {method: 'POST'});
-                                        }
-                                        setInterval(refresh, 1000);
-                                        """
-                                    )
-                                }
-                            }
-                        }
-                        body {
-                            h1 { +"StressCraft Web GUI" }
-                            div { +"Sessions: " ; span { id = "sessions"; +"0" } }
-                            div { +"Active: " ; span { id = "active"; +"0" } }
-                            div { +"Chunks: " ; span { id = "chunks"; +"0" } }
-                            form {
-                                id = "start-form"
-                                onSubmit = "start(event)"
-                                p {
-                                    +"Host: "
-                                    textInput(name = "host") { value = "localhost" }
-                                }
-                                p {
-                                    +"Port: "
-                                    numberInput(name = "port") { value = "25565" }
-                                }
-                                p {
-                                    +"Count: "
-                                    numberInput(name = "count") { value = "500" }
-                                }
-                                p {
-                                    +"Delay: "
-                                    numberInput(name = "delay") { value = "20" }
-                                }
-                                p {
-                                    +"Buffer: "
-                                    numberInput(name = "buffer") { value = "20" }
-                                }
-                                p {
-                                    +"Prefix: "
-                                    textInput(name = "prefix") { value = "Player" }
-                                }
-                                p {
-                                    +"Simulate: "
-                                    checkBoxInput(name = "simulate") { checked = true }
-                                }
-                                p {
-                                    submitInput { value = "Start" }
-                                }
-                            }
-                            button {
-                                type = ButtonType.button
-                                onClick = "stop()"
-                                +"Stop"
-                            }
-                        }
-                    }
-                }
-
-                get("/stats") {
+                // ── REST ────────────────────────────────────────────────────
+                get("/api/stats") {
                     val running = app
                     if (running == null) {
-                        call.respond(mapOf("running" to false))
+                        call.respond(
+                            mapOf(
+                                "running" to false,
+                                "sessionCount" to 0,
+                                "activeSessions" to 0,
+                                "chunksLoaded" to 0
+                            )
+                        )
                     } else {
                         call.respond(
                             mapOf(
@@ -123,19 +67,20 @@ object StressCraftWeb {
                     }
                 }
 
-                post("/start") {
+                post("/api/start") {
                     if (app != null) {
-                        call.respondText("Already running", status = io.ktor.http.HttpStatusCode.BadRequest)
+                        call.respondText("Already running", status = HttpStatusCode.BadRequest)
                         return@post
                     }
                     val params = call.receiveParameters()
-                    val host = params["host"] ?: return@post call.respondText("Missing host", status = io.ktor.http.HttpStatusCode.BadRequest)
+                    val host = params["host"]
+                        ?: return@post call.respondText("Missing host", status = HttpStatusCode.BadRequest)
                     val port = params["port"]?.toIntOrNull() ?: 25565
                     val count = params["count"]?.toIntOrNull() ?: 500
                     val delay = params["delay"]?.toIntOrNull() ?: 20
                     val buffer = params["buffer"]?.toIntOrNull() ?: 20
                     val prefix = params["prefix"] ?: "Player"
-                    val simulate = params["simulate"]?.toBoolean() ?: true
+                    val simulate = params["simulate"]?.let { it == "on" || it == "true" } ?: true
 
                     val options = StressCraftOptions(count, delay, buffer, prefix, simulate, null)
                     val instance = StressCraft(host, port, options)
@@ -144,15 +89,39 @@ object StressCraftWeb {
                     call.respondText("Started")
                 }
 
-                post("/stop") {
-                    val running = app
-                    if (running == null) {
-                        call.respondText("Not running", status = io.ktor.http.HttpStatusCode.BadRequest)
+                post("/api/stop") {
+                    val running = app ?: run {
+                        call.respondText("Not running", status = HttpStatusCode.BadRequest)
                         return@post
                     }
                     running.stop()
                     app = null
                     call.respondText("Stopped")
+                }
+
+                // ── WebSocket telemetry stream ────────────────────────────
+                webSocket("/api/ws") {
+                    try {
+                        while (isActive) {
+                            val running = app
+                            val payload = buildJsonObject {
+                                put("running", running != null)
+                                put("sessionCount", running?.sessionCount?.get() ?: 0)
+                                put("activeSessions", running?.activeSessions?.get() ?: 0)
+                                put("chunksLoaded", running?.chunksLoaded?.get() ?: 0)
+                                put("ts", System.currentTimeMillis())
+                            }
+                            send(Frame.Text(Json.encodeToString(payload)))
+                            delay(1_000)
+                        }
+                    } catch (_: Exception) {
+                        // client disconnected — normal teardown
+                    }
+                }
+
+                // ── Health-check (for Docker) ─────────────────────────────
+                get("/health") {
+                    call.respondText("OK")
                 }
             }
         }.start(wait = true)
@@ -162,4 +131,3 @@ object StressCraftWeb {
 fun main() {
     StressCraftWeb.start()
 }
-

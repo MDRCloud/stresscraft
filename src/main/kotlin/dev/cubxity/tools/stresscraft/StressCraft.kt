@@ -81,7 +81,11 @@ class StressCraft(
         synchronized(_sessions) {
             _sessions.add(session)
         }
-        session.connect(name)
+        // Connect in its own coroutine so the spawning loop is never blocked
+        // by a slow or failing TCP handshake.
+        coroutineScope.launch(Dispatchers.IO) {
+            session.connect(name)
+        }
     }
 
     private fun executeShutdownHook() {

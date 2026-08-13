@@ -35,6 +35,7 @@ const el = {
   subActive:    $('sub-active'),
   subChunks:    $('sub-chunks'),
   subRate:      $('sub-rate'),
+  apiKey:       $('field-api-key'),
   form:         $('start-form'),
   btnStart:     $('btn-start'),
   btnStop:      $('btn-stop'),
@@ -216,22 +217,45 @@ function connectWS() {
 /* ══════════════════════════════════════════════
    START / STOP
    ══════════════════════════════════════════════ */
+/* ── API key persistence ── */
+const API_KEY_STORAGE = 'stresscraft.apiKey';
+el.apiKey.value = localStorage.getItem(API_KEY_STORAGE) || '';
+el.apiKey.addEventListener('input', () => {
+  localStorage.setItem(API_KEY_STORAGE, el.apiKey.value);
+});
+
+function authHeaders() {
+  return el.apiKey.value ? { 'X-API-Key': el.apiKey.value } : {};
+}
+
+async function handleAuthError(res) {
+  if (res.status === 401) {
+    toast('Invalid or missing API key', 'error');
+    log('Request rejected: invalid or missing API key.', 'error');
+    return true;
+  }
+  return false;
+}
+
 el.form.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!el.form.checkValidity()) { el.form.reportValidity(); return; }
 
   el.btnStart.disabled = true;
   const body = new URLSearchParams(new FormData(el.form));
+  body.delete('apiKey');
 
   try {
-    const res = await fetch(`${API_BASE}/start`, { method: 'POST', body });
+    const res = await fetch(`${API_BASE}/start`, { method: 'POST', body, headers: authHeaders() });
     if (res.ok) {
       toast('Stress test started!', 'success');
       log(`Starting test → ${currentFormValue('host')}:${currentFormValue('port')} with ${currentFormValue('count')} bots`, 'info');
-    } else {
+    } else if (!(await handleAuthError(res))) {
       const msg = await res.text();
       toast(`Error: ${msg}`, 'error');
       log(`Start failed: ${msg}`, 'error');
+      el.btnStart.disabled = false;
+    } else {
       el.btnStart.disabled = false;
     }
   } catch (_) {
@@ -243,12 +267,14 @@ el.form.addEventListener('submit', async (e) => {
 $('btn-stop').addEventListener('click', async () => {
   el.btnStop.disabled = true;
   try {
-    const res = await fetch(`${API_BASE}/stop`, { method: 'POST' });
+    const res = await fetch(`${API_BASE}/stop`, { method: 'POST', headers: authHeaders() });
     if (res.ok) {
       toast('Test stopped.', 'info');
-    } else {
+    } else if (!(await handleAuthError(res))) {
       const msg = await res.text();
       toast(`Error: ${msg}`, 'error');
+      el.btnStop.disabled = false;
+    } else {
       el.btnStop.disabled = false;
     }
   } catch (_) {

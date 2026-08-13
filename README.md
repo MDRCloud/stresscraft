@@ -32,6 +32,18 @@ This repository ships a full **two-container Docker Compose stack**:
 | `stresscraft-backend` | Ktor/JVM REST + WebSocket API | built from `Dockerfile` |
 | `stresscraft-frontend` | Nginx static UI + reverse proxy | `nginx:1.27-alpine` |
 
+### Configure the API key
+
+The backend requires an API key to start/stop stress tests. Create a `.env` file
+next to `docker-compose.yml`:
+
+```bash
+echo "STRESSCRAFT_API_KEY=$(openssl rand -hex 24)" > .env
+```
+
+Paste the same value into the dashboard's "API key" field when you open it — it's
+saved in your browser's local storage.
+
 ### Start the stack
 
 ```bash

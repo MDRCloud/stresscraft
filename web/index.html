@@ -98,6 +98,10 @@
         <form id="start-form" novalidate>
           <div class="form-grid">
             <div class="field field--full">
+              <label class="field__label" for="field-api-key">API Key</label>
+              <input class="field__input" id="field-api-key" name="apiKey" type="password" placeholder="X-API-Key (see server logs or .env)" autocomplete="off" />
+            </div>
+            <div class="field field--full">
               <label class="field__label" for="field-host">Host</label>
               <input class="field__input" id="field-host" name="host" type="text" value="host.docker.internal" placeholder="mc.server.net or host.docker.internal" autocomplete="off" required />
               <span class="field__hint" id="hint-localhost" hidden>⚠️ Use <code>host.docker.internal</code> to target a Minecraft server running on this machine — <code>localhost</code> resolves to the container itself.</span>
@@ -108,7 +112,7 @@
             </div>
             <div class="field">
               <label class="field__label" for="field-count">Bot Count</label>
-              <input class="field__input" id="field-count" name="count" type="number" value="50" min="1" max="10000" />
+              <input class="field__input" id="field-count" name="count" type="number" value="50" min="1" max="2000" />
             </div>
             <div class="field">
               <label class="field__label" for="field-delay">Join Delay (ms)</label>

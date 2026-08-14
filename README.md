@@ -78,7 +78,7 @@ The dashboard provides:
 
 - **Live metrics** — total bots, active sessions, chunks loaded, join rate/s
 - **Real-time charts** — 60-second rolling session load and chunk pressure graphs
-- **Control panel** — configure host, port, bot count, join delay, buffer, prefix, and simulation mode
+- **Control panel** — configure host, port, bot count, join delay, buffer, and prefix
 - **Presets** — Light / Medium / Extreme one-click load profiles
 - **Event log** — live terminal view of test lifecycle events
 - **Toast notifications** — contextual start/stop feedback

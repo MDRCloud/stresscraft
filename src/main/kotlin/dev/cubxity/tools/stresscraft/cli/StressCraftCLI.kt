@@ -26,12 +26,6 @@ object StressCraftCLI {
             .default(20)
         val prefix by parser.option(ArgType.String, "prefix", "p", description = "player name prefix")
             .default("Player")
-        val simulate by parser.option(
-            ArgType.Boolean,
-            "simulate",
-            "s",
-            description = "use player simulation (not implemented)"
-        ).default(true)
         val acceptResourcePacks by parser.option(
             ArgType.Choice<ResourcePackStatus>(),
             "resource_pack_response",
@@ -46,7 +40,7 @@ object StressCraftCLI {
         })
         terminal.init()
 
-        val options = StressCraftOptions(count, delay, buffer, prefix, simulate, acceptResourcePacks)
+        val options = StressCraftOptions(count, delay, buffer, prefix, acceptResourcePacks)
         val app = StressCraft(host, port, options)
         app.start()
 

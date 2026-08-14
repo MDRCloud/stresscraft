@@ -110,9 +110,8 @@ fun Application.stressCraftModule() {
                 return@post
             }
             val prefix = params["prefix"] ?: "Player"
-            val simulate = params["simulate"]?.let { it == "on" || it == "true" } ?: true
 
-            val options = StressCraftOptions(count, delay, buffer, prefix, simulate, null)
+            val options = StressCraftOptions(count, delay, buffer, prefix, null)
             val instance = StressCraft(host, port, options)
             if (!StressCraftWeb.app.compareAndSet(null, instance)) {
                 call.respondText("Already running", status = HttpStatusCode.BadRequest)

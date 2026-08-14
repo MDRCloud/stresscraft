@@ -1,12 +1,9 @@
 package dev.cubxity.tools.stresscraft
 
 import dev.cubxity.tools.stresscraft.data.StressCraftSession
-import dev.cubxity.tools.stresscraft.module.Module
 import kotlinx.coroutines.*
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.math.ceil
-import kotlin.system.measureNanoTime
 
 class StressCraft(
     val host: String,
@@ -17,7 +14,6 @@ class StressCraft(
     private var id = 0
 
     private val _sessions = LinkedList<StressCraftSession>()
-    private val modules = listOf<Module>()
 
     val sessionCount = AtomicInteger()
     val activeSessions = AtomicInteger()
@@ -44,25 +40,6 @@ class StressCraft(
                     error.printStackTrace()
                 }
                 delay(options.delay.toLong())
-            }
-        }
-
-        // Ticking
-        coroutineScope.launch {
-            while (true) {
-                val time = measureNanoTime {
-                    try {
-                        for (session in _sessions) {
-                            for (module in modules) {
-                                module.tick(session)
-                            }
-                        }
-                    } catch (error: Throwable) {
-                        System.err.println("Error during tick:")
-                        error.printStackTrace()
-                    }
-                }
-                delay(50 - ceil(time / 1E6).toLong())
             }
         }
     }

@@ -40,7 +40,8 @@ class StressCraft(
                         createSession()
                     }
                 } catch (error: Throwable) {
-                    // ?
+                    System.err.println("Error while spawning session:")
+                    error.printStackTrace()
                 }
                 delay(options.delay.toLong())
             }
@@ -57,7 +58,8 @@ class StressCraft(
                             }
                         }
                     } catch (error: Throwable) {
-                        // ?
+                        System.err.println("Error during tick:")
+                        error.printStackTrace()
                     }
                 }
                 delay(50 - ceil(time / 1E6).toLong())

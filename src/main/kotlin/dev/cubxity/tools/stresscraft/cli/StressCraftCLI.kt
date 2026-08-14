@@ -54,7 +54,10 @@ object StressCraftCLI {
             try {
                 renderProgress(app)
             } catch (error: Throwable) {
-                // ?
+                terminal.close()
+                System.err.println("Error while rendering progress:")
+                error.printStackTrace()
+                terminal.init()
             }
             delay(100)
         }

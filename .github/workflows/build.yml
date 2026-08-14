@@ -16,6 +16,8 @@ jobs:
           distribution: zulu
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+      - name: run tests
+        run: ./gradlew test
       - name: build with Gradle
         run: ./gradlew shadowJar
       - name: upload build artifacts

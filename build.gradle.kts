@@ -26,6 +26,10 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
     implementation("io.ktor:ktor-server-websockets:$ktorVersion")
+
+    // Tests
+    testImplementation(kotlin("test-junit5"))
+    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 }
 
 tasks {
@@ -36,5 +40,8 @@ tasks {
     }
     shadowJar {
         archiveClassifier.set("")
+    }
+    test {
+        useJUnitPlatform()
     }
 }

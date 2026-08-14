@@ -72,6 +72,51 @@ Browser → :8282 Nginx → /api/* → :8080 Ktor backend → Minecraft server
                        /        →  Static dashboard assets
 ```
 
+### Testing against a local server
+
+Don't point StressCraft at a server you don't own. To sanity-check that
+StressCraft itself works before using it against your real server, the stack
+includes an optional local Paper server, disabled by default via a Compose
+profile:
+
+```bash
+docker compose --profile test-server up -d --build
+```
+
+Wait for it to come up (first boot downloads Paper and can take a minute or two):
+
+```bash
+docker compose logs -f stresscraft-test-server
+```
+
+Once it's healthy, open the dashboard and start a test against:
+
+- **Host:** `stresscraft-test-server` (resolves via Docker's internal DNS — no
+  `host.docker.internal` needed, since it's on the same Compose network)
+- **Port:** `25565`
+
+The test server ships with `online-mode=false`, a high `max-players`, and
+`network-compression-threshold=-1` already set via env vars. Two more settings
+from the [How to use?](#how-to-use) list above aren't env-var-driven and
+default on, so past ~1 bot the server will throttle/reject the rest unless you
+disable them once, right after the **first** boot:
+
+```bash
+docker exec stresscraft-test-server sed -i 's/connection-throttle: 4000/connection-throttle: -1/' /data/bukkit.yml
+docker exec stresscraft-test-server sed -i 's/max-joins-per-tick: 5/max-joins-per-tick: 100/' /data/config/paper-global.yml
+docker restart stresscraft-test-server
+```
+
+(Verified against Paper 1.21.1 — without this, only the first bot in a run
+connects and the rest are silently throttled by Bukkit's per-IP connection
+throttle, since every bot originates from the same backend container IP.)
+
+Tear it down (and wipe its world data) with:
+
+```bash
+docker compose --profile test-server down -v
+```
+
 ## Web Dashboard
 
 The dashboard provides:

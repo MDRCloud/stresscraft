@@ -36,6 +36,42 @@ services:
     networks:
       - stresscraft-net
 
+  # ── Local Paper server for testing StressCraft itself ─────────
+  # Opt-in: `docker compose --profile test-server up -d`
+  # Once healthy, target it from the dashboard as host "stresscraft-test-server", port 25565.
+  stresscraft-test-server:
+    image: itzg/minecraft-server:latest
+    container_name: stresscraft-test-server
+    restart: unless-stopped
+    profiles:
+      - test-server
+    environment:
+      EULA: "TRUE"
+      TYPE: "PAPER"
+      # Pinned to match the mcprotocollib version StressCraft is built against
+      # (build.gradle.kts: org.geysermc.mcprotocollib:protocol:1.21-SNAPSHOT).
+      # "latest" will drift ahead of what the bots can actually speak.
+      VERSION: "1.21.1"
+      ONLINE_MODE: "FALSE"
+      MAX_PLAYERS: "2000"
+      NETWORK_COMPRESSION_THRESHOLD: "-1"
+      MEMORY: "2G"
+    ports:
+      - "25565:25565"
+    volumes:
+      - stresscraft-test-server-data:/data
+    networks:
+      - stresscraft-net
+    healthcheck:
+      test: ["CMD", "mc-health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 6
+
 networks:
   stresscraft-net:
     driver: bridge
+
+volumes:
+  stresscraft-test-server-data:

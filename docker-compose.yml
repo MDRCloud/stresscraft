@@ -20,16 +20,15 @@ services:
       start_period: 25s
       retries: 3
 
-  # ── Nginx frontend / reverse proxy ────────────────────────────
+  # ── React + Nginx frontend / reverse proxy ────────────────────
   stresscraft-frontend:
-    image: nginx:1.27-alpine
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
     container_name: stresscraft-frontend
     restart: unless-stopped
     ports:
       - "8282:80"
-    volumes:
-      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./web:/usr/share/nginx/html:ro
     depends_on:
       stresscraft-backend:
         condition: service_healthy
